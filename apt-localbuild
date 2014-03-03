@@ -1,0 +1,20 @@
+#!/bin/bash
+# build the named Debian source packages
+
+set -e
+set -x
+
+oldpwd=$(pwd)
+for package_name in "$@"
+do
+    tmp=$(mktemp -d)
+    cd "$tmp"
+    apt-get source $package_name
+    apt-get build-dep $package_name
+
+    cd $(find . -mindepth 1 -maxdepth 1 -type d)
+    dch -l+localbuild Local build
+    dpkg-buildpackage -us -uc
+    cp ../*.deb "$oldpwd"
+    rm -r "$tmp"
+done
