@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# This scripts redirects network traffic and limits its bandwidth
+# usage:
+#   limit-bandwith ip port [bandwith]
+
+ip=${1:?no IP given}
+port=${2:?no port given}
+limit=${3:-100k}
+
+nc6 --continuous --listen --port=$port \
+    --exec="pv --rate-limit=$limit | nc6 $ip $port"
