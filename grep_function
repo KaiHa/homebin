@@ -1,0 +1,26 @@
+#!/usr/bin/awk -f
+# usage:
+#   grep_function FUNC_NAME FILE [FILE ...]
+
+BEGIN {
+    justfound = 0
+    pattern = ARGV[1]"\\s*\\("
+    ARGV[1] = ""
+}
+
+$0 ~ pattern {
+    if (! ($0 ~ /;/))
+        justfound = 2
+}
+
+justfound > 0 || level > 0 {
+    print $0
+    justfound -= 1
+    level += get_level_diff($0)
+}
+
+function get_level_diff(text) {
+    open = split(text, a, "{")
+    clos = split(text, a, "}")
+    return open - clos
+}
