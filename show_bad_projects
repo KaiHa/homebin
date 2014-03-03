@@ -1,0 +1,58 @@
+#!/usr/bin/python
+"""
+Get the names of failing projects from the jenkins server.
+"""
+
+import ast
+import sys
+import re
+from urllib import urlopen
+
+def strip_name(name):
+    """Return only the interesing part of the name.
+    """
+    name = name.split(',')[0]
+    name = name.split(' ')[-1]
+    num, _, typ = name.partition('/trunk/')
+    num, _, _ = num.partition('-')
+    return "{0} {1}".format(num, typ)
+
+def strip_url(url):
+    """Strip the build number from the URL.
+    """
+    return re.sub(r'[^/]+/?$', '', url)
+
+def print_bad_projects(data):
+    """Print all projects where the last build has failed.
+    """
+    for each in data['runs']:
+        prj = get_data(each['url'])
+        if prj['result'] != 'SUCCESS':
+            print("{0:18} {1}lastBuild/console"
+                  "".format(strip_name(prj['fullDisplayName']),
+                            strip_url(each['url'])))
+
+def get_data(url):
+    """Get the data from Jenkins.
+    """
+    url += "/api/python?pretty=true"
+    return ast.literal_eval(urlopen(url).read())
+
+
+def main(build_number=None):
+    """The main function.
+    """
+    if not build_number:
+        data = get_data("http://jenkins/job/test-lux-on-project/")
+        build_number = str(data['lastCompletedBuild']['number'])
+    data = get_data("http://jenkins/job/test-lux-on-project/" + build_number)
+    print("For the following projects the build #{0} has failed:"
+          "".format(build_number))
+    print_bad_projects(data)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        main(sys.argv[1])
+    else:
+        main()
